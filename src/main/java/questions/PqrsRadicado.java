@@ -15,7 +15,9 @@ public class PqrsRadicado implements Question<String> {
 
     @Override
     public String answeredBy(Actor actor) {
-        return extractRadicado(PqrsHome.MENSAJE_RESPUESTA.resolveFor(actor).getText());
+        String confirmation = PqrsHome.CONFIRMACION_ENVIO.resolveFor(actor).getText();
+        String radicado = PqrsHome.NUMERO_RADICADO.resolveFor(actor).getText();
+        return extractRadicado(confirmation + " " + radicado);
     }
 
     static String extractRadicado(String confirmationMessage) {

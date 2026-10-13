@@ -7,11 +7,8 @@ import net.serenitybdd.screenplay.actions.Clear;
 import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.actions.Enter;
 import net.serenitybdd.screenplay.actions.SelectFromOptions;
-import net.serenitybdd.screenplay.waits.WaitUntil;
+import utils.GlobalWait;
 
-import java.time.Duration;
-
-import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isVisible;
 import static userInterfaces.BillingAddressPage.ADDRESS;
 import static userInterfaces.BillingAddressPage.CITY;
 import static userInterfaces.BillingAddressPage.SAVE_ADDRESS;
@@ -36,12 +33,12 @@ public class FillBillingAddress implements Task {
             throw new IllegalArgumentException("La dirección y la ciudad de facturación son obligatorias");
         }
         actor.attemptsTo(
-                WaitUntil.the(ADDRESS, isVisible()).forNoMoreThan(Duration.ofSeconds(20)),
+                GlobalWait.untilVisible(ADDRESS),
                 Clear.field(ADDRESS),
                 Enter.theValue(address).into(ADDRESS),
                 SelectFromOptions.byVisibleText(city).from(CITY),
                 Click.on(SAVE_ADDRESS),
-                WaitUntil.the(SUCCESS_MESSAGE, isVisible()).forNoMoreThan(Duration.ofSeconds(20))
+                GlobalWait.untilVisible(SUCCESS_MESSAGE)
         );
     }
 }

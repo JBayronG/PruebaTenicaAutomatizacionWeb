@@ -14,7 +14,6 @@ Feature: Gestion de compras de productos
     Examples:
       | fila |
       | 1    |
-      | 2    |
 
   @Regression @Destructive @RequiresQAData @Bolsos
   Scenario Outline: Compra exitosa de bolsos

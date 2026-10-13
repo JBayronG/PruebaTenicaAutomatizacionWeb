@@ -13,8 +13,12 @@ public class ObtenerResumenOrden implements Question<Orden> {
 
     @Override
     public Orden answeredBy(Actor actor) {
+        String numero = firstVisibleText(actor, ProductHome.NUMERO_PEDIDO, ProductHome.NUMERO_PEDIDO_FALLBACK);
+        if (numero.isEmpty()) {
+            throw new AssertionError("No se confirmó la orden después de completar la compra");
+        }
         return new Orden(
-                firstVisibleText(actor, ProductHome.NUMERO_PEDIDO, ProductHome.NUMERO_PEDIDO_FALLBACK),
+                numero,
                 firstVisibleText(actor, ProductHome.FECHA_PEDIDO, ProductHome.FECHA_PEDIDO_FALLBACK),
                 firstVisibleText(actor, ProductHome.TOTAL_PEDIDO, ProductHome.TOTAL_PEDIDO_FALLBACK),
                 firstVisibleText(actor, ProductHome.METODO_PAGO, ProductHome.METODO_PAGO_FALLBACK)

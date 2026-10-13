@@ -4,7 +4,6 @@ import interactions.ClickJs;
 import models.PqrsTestData;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
-import net.serenitybdd.screenplay.Tasks;
 import net.serenitybdd.screenplay.actions.Enter;
 import net.serenitybdd.screenplay.actions.SelectFromOptions;
 import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
@@ -20,7 +19,7 @@ public class FillPqrsForm implements Task {
     }
 
     public static FillPqrsForm with(PqrsTestData data) {
-        return Tasks.instrumented(FillPqrsForm.class, data);
+        return new FillPqrsForm(data);
     }
 
     @Override

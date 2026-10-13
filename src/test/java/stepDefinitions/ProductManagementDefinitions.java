@@ -13,7 +13,7 @@ import tasks.SelectCategory;
 import tasks.SelectProduct;
 
 import static net.serenitybdd.screenplay.GivenWhenThen.seeThat;
-import static org.hamcrest.Matchers.*;;
+import static org.hamcrest.Matchers.*;
 
 
 public class ProductManagementDefinitions {

@@ -6,7 +6,6 @@ import interactions.ScrollToCenter;
 import models.PqrsTestData;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
-import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
 import userInterfaces.PqrsHome;
 
 public class SubmitPqrsRequest implements Task {
@@ -28,6 +27,6 @@ public class SubmitPqrsRequest implements Task {
                 Pause.beforeSubmit(),
                 ClickJs.en(PqrsHome.ENVIAR)
         );
-        PqrsFormResponse.await(BrowseTheWeb.as(actor).getDriver());
+        PqrsFormResponse.await(actor);
     }
 }

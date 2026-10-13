@@ -30,4 +30,8 @@ public class PqrsHome {
             .locatedBy("#forminator-module-1000452 button.forminator-button-submit");
     public static final Target MENSAJE_RESPUESTA = Target.the("mensaje de respuesta de PQRS")
             .locatedBy("#forminator-module-1000452 .forminator-response-message");
+    public static final Target CONFIRMACION_ENVIO = Target.the("confirmación de envío PQRS")
+            .located(By.xpath("//h1[contains(normalize-space(), 'Tu solicitud ha sido enviada con éxito')]") );
+    public static final Target NUMERO_RADICADO = Target.the("número de radicado PQRS")
+            .located(By.xpath("//h3[contains(normalize-space(), 'Número de radicado')]") );
 }

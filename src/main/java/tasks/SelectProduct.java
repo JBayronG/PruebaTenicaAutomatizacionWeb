@@ -9,7 +9,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import java.time.Duration;
+import utils.GlobalWait;
+
 import java.util.Map;
 
 
@@ -28,7 +29,7 @@ public class SelectProduct implements Task {
         String talla = datosFila.get("Talla");
 
         WebDriver driver = BrowseTheWeb.as(actor).getDriver();
-        WebElement productLink = new WebDriverWait(driver, Duration.ofSeconds(20))
+        WebElement productLink = new WebDriverWait(driver, GlobalWait.TIMEOUT)
                 .withMessage("Product is not listed or available: " + producto)
                 .until(currentDriver -> {
                     var links = currentDriver.findElements(
@@ -41,7 +42,7 @@ public class SelectProduct implements Task {
         productLink.click();
 
         if (talla != null && !talla.trim().isBlank()) {
-            WebElement sizeOption = new WebDriverWait(driver, Duration.ofSeconds(20))
+            WebElement sizeOption = new WebDriverWait(driver, GlobalWait.TIMEOUT)
                     .withMessage("Requested size " + talla + " is unavailable for product " + producto)
                     .until(currentDriver -> {
                         var sizes = currentDriver.findElements(By.xpath(

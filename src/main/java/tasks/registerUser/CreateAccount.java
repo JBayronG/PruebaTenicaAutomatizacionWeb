@@ -12,7 +12,7 @@ import userInterfaces.CreateAccountHome;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-import java.time.Duration;
+import utils.GlobalWait;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -51,7 +51,7 @@ public class CreateAccount implements Task {
         );
 
         WebDriver driver = BrowseTheWeb.as(actor).getDriver();
-        Boolean completed = new WebDriverWait(driver, Duration.ofSeconds(20))
+        Boolean completed = new WebDriverWait(driver, GlobalWait.TIMEOUT)
                 .withMessage("Registration did not complete or show a validation error")
                 .until(currentDriver -> {
                     boolean accountPageVisible = currentDriver.findElements(

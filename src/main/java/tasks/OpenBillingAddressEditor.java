@@ -7,7 +7,7 @@ import net.serenitybdd.screenplay.actions.Click;
 import net.serenitybdd.screenplay.actions.Scroll;
 import net.serenitybdd.screenplay.waits.WaitUntil;
 
-import java.time.Duration;
+import utils.GlobalWait;
 
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isVisible;
 import static userInterfaces.BillingAddressPage.BILLING_SECTION;
@@ -23,13 +23,13 @@ public class OpenBillingAddressEditor implements Task {
     @Override
     public <T extends Actor> void performAs(T actor) {
         actor.attemptsTo(
-                WaitUntil.the(DATA_LINK, isVisible()).forNoMoreThan(Duration.ofSeconds(20)),
+                GlobalWait.untilVisible(DATA_LINK),
                 Click.on(DATA_LINK),
-                WaitUntil.the(BILLING_SECTION, isVisible()).forNoMoreThan(Duration.ofSeconds(20)),
+                GlobalWait.untilVisible(BILLING_SECTION),
                 Scroll.to(BILLING_SECTION),
-                WaitUntil.the(EDIT_BILLING_ADDRESS, isVisible()).forNoMoreThan(Duration.ofSeconds(20)),
+                GlobalWait.untilVisible(EDIT_BILLING_ADDRESS),
                 Click.on(EDIT_BILLING_ADDRESS),
-                WaitUntil.the(ADDRESS_MODAL, isVisible()).forNoMoreThan(Duration.ofSeconds(20))
+                GlobalWait.untilVisible(ADDRESS_MODAL)
         );
     }
 }

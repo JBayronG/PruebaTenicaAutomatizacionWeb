@@ -35,16 +35,16 @@ public class ProductHome {
             .locatedBy("//h1[normalize-space()='Finalizar compra']");
 
     public static final Target NUMERO_PEDIDO = Target.the("número de pedido")
-            .locatedBy(".woocommerce-order-overview__order strong");
+            .located(By.cssSelector(".woocommerce-order-overview__order strong"));
 
     public static final Target FECHA_PEDIDO = Target.the("fecha del pedido")
-            .locatedBy(".woocommerce-order-overview__date strong");
+            .located(By.cssSelector(".woocommerce-order-overview__date strong"));
 
     public static final Target TOTAL_PEDIDO = Target.the("total del pedido")
-            .locatedBy(".woocommerce-order-overview__total strong");
+            .located(By.cssSelector(".woocommerce-order-overview__total strong"));
 
     public static final Target METODO_PAGO = Target.the("método de pago")
-            .locatedBy(".woocommerce-order-overview__payment-method strong");
+            .located(By.cssSelector(".woocommerce-order-overview__payment-method strong"));
 
     public static final Target NUMERO_PEDIDO_FALLBACK = Target.the("número de pedido alternativo")
             .locatedBy("//li[contains(@class,'order')]//strong");
