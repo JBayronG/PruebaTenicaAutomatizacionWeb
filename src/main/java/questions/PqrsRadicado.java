@@ -2,18 +2,12 @@ package questions;
 
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Question;
-import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
+import userInterfaces.PqrsHome;
+import utils.PqrsConfirmationPatterns;
 
-import java.util.List;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PqrsRadicado implements Question<String> {
-    private static final Pattern RADICADO_PATTERN = Pattern.compile(
-            "(?iu)(?:n[uú]mero\\s+de\\s+)?radicado\\s*(?:es\\s*)?[:#-]?\\s*([a-z0-9-]+)"
-    );
 
     public static PqrsRadicado fromConfirmation() {
         return new PqrsRadicado();
@@ -21,20 +15,27 @@ public class PqrsRadicado implements Question<String> {
 
     @Override
     public String answeredBy(Actor actor) {
-        List<WebElement> messages = BrowseTheWeb.as(actor).getDriver().findElements(
-                By.cssSelector("#forminator-module-1000452 .forminator-response-message")
-        );
-        String message = messages.stream()
-                .filter(WebElement::isDisplayed)
-                .map(WebElement::getText)
-                .filter(text -> !text.isBlank())
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("The PQRS confirmation message was not displayed"));
+        return extractRadicado(PqrsHome.MENSAJE_RESPUESTA.resolveFor(actor).getText());
+    }
 
-        Matcher matcher = RADICADO_PATTERN.matcher(message);
-        if (!matcher.find()) {
-            throw new AssertionError("The PQRS response did not include a radicado number");
+    static String extractRadicado(String confirmationMessage) {
+        validateMessage(confirmationMessage);
+
+        Matcher radicadoMatcher = PqrsConfirmationPatterns.RADICADO_PATTERN.matcher(confirmationMessage);
+        if (radicadoMatcher.find()) {
+            return radicadoMatcher.group(1);
         }
-        return matcher.group(1);
+        if (PqrsConfirmationPatterns.SUCCESS_PATTERN.matcher(confirmationMessage).find()) {
+            return PqrsConfirmationPatterns.SUCCESS_RESULT;
+        }
+        throw new AssertionError(
+                "The PQRS response did not include a radicado number or success confirmation"
+        );
+    }
+
+    private static void validateMessage(String confirmationMessage) {
+        if (confirmationMessage == null || confirmationMessage.isBlank()) {
+            throw new AssertionError("The PQRS confirmation message was empty");
+        }
     }
 }

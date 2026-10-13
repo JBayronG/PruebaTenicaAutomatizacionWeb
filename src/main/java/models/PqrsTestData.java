@@ -16,39 +16,53 @@ public record PqrsTestData(
         String causal
 ) {
     public static PqrsTestData fromEnvironment() {
+        return fromMap(System.getenv());
+    }
+
+    public static PqrsTestData fromMap(java.util.Map<String, String> values) {
         List<String> missing = new ArrayList<>();
-        String puntoVenta = required("BONBONITE_PQRS_STORE", missing);
-        String nombreCompleto = required("BONBONITE_PQRS_FULL_NAME", missing);
-        String direccion = required("BONBONITE_PQRS_ADDRESS", missing);
-        String tipoDocumento = required("BONBONITE_PQRS_DOCUMENT_TYPE", missing);
-        String numeroDocumento = required("BONBONITE_PQRS_DOCUMENT_NUMBER", missing);
-        String telefono = required("BONBONITE_PQRS_PHONE", missing);
-        String correo = required("BONBONITE_PQRS_EMAIL", missing);
-        String tipoSolicitud = required("BONBONITE_PQRS_REQUEST_TYPE", missing);
-        String descripcion = required("BONBONITE_PQRS_DESCRIPTION", missing);
-        String causal = System.getenv("BONBONITE_PQRS_CAUSE");
+        String puntoVenta = required(values, "BONBONITE_PQRS_STORE", "puntoVenta", missing);
+        String nombreCompleto = required(values, "BONBONITE_PQRS_FULL_NAME", "nombreCompleto", missing);
+        String direccion = required(values, "BONBONITE_PQRS_ADDRESS", "direccion", missing);
+        String tipoDocumento = required(values, "BONBONITE_PQRS_DOCUMENT_TYPE", "tipoDocumento", missing);
+        String numeroDocumento = required(values, "BONBONITE_PQRS_DOCUMENT_NUMBER", "numeroDocumento", missing);
+        String telefono = required(values, "BONBONITE_PQRS_PHONE", "telefono", missing);
+        String correo = required(values, "BONBONITE_PQRS_EMAIL", "correo", missing);
+        String tipoSolicitud = required(values, "BONBONITE_PQRS_REQUEST_TYPE", "tipoSolicitud", missing);
+        String descripcion = required(values, "BONBONITE_PQRS_DESCRIPTION", "descripcion", missing);
+        String causal = firstValue(values, "BONBONITE_PQRS_CAUSE", "causal");
 
         if (!missing.isEmpty()) {
             throw new IllegalStateException(
-                    "Missing required PQRS test environment variables: " + String.join(", ", missing)
+                    "Missing required PQRS test data: " + String.join(", ", missing)
             );
         }
 
-        return new PqrsTestData(
-                puntoVenta,
-                nombreCompleto,
-                direccion,
-                tipoDocumento,
-                numeroDocumento,
-                telefono,
-                correo,
-                tipoSolicitud,
-                descripcion,
-                causal == null ? "" : causal.trim()
-        );
+        return new PqrsTestData(puntoVenta, nombreCompleto, direccion, tipoDocumento,
+                numeroDocumento, telefono, correo, tipoSolicitud, descripcion,
+                causal == null ? "" : causal.trim());
+    }
+
+    private static String required(java.util.Map<String, String> values, String environmentName,
+                                   String excelName, List<String> missing) {
+        String value = firstValue(values, environmentName, excelName);
+        if (value == null || value.isBlank()) {
+            missing.add(excelName);
+            return "";
+        }
+        return value.trim();
+    }
+
+    private static String firstValue(java.util.Map<String, String> values, String first, String second) {
+        String value = values.get(first);
+        return value == null ? values.get(second) : value;
     }
 
     public static List<String> missingEnvironmentVariables() {
+        return missingEnvironmentVariables(System.getenv());
+    }
+
+    static List<String> missingEnvironmentVariables(java.util.Map<String, String> environment) {
         List<String> missing = new ArrayList<>();
         for (String variableName : List.of(
                 "BONBONITE_PQRS_STORE",
@@ -61,7 +75,10 @@ public record PqrsTestData(
                 "BONBONITE_PQRS_REQUEST_TYPE",
                 "BONBONITE_PQRS_DESCRIPTION"
         )) {
-            required(variableName, missing);
+            String value = environment.get(variableName);
+            if (value == null || value.isBlank()) {
+                missing.add(variableName);
+            }
         }
         return List.copyOf(missing);
     }

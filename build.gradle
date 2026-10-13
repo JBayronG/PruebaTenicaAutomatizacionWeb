@@ -79,6 +79,65 @@ test {
     }
 }
 
+tasks.register('verifyWorkspaceRoot') {
+    group = 'verification'
+    description = 'Verifica que solo exista la carpeta principal del proyecto'
+    doLast {
+        File expectedRoot = new File(
+                'C:/Automatizacion/Practivas Automatización Web/PruebaTenicaAutomatizacionWeb'
+        ).canonicalFile
+        File actualRoot = rootDir.canonicalFile
+        if (actualRoot != expectedRoot) {
+            throw new GradleException(
+                    "El proyecto debe ejecutarse desde ${expectedRoot.absolutePath}; "
+                            + "ruta detectada: ${actualRoot.absolutePath}"
+            )
+        }
+
+        File parent = actualRoot.parentFile
+        File[] siblingProjects = parent.listFiles()
+        List<File> unexpectedProjects = siblingProjects
+                .findAll { it.isDirectory() && it.name.toLowerCase().contains('pruebatenica') }
+                .findAll { it.canonicalFile != actualRoot }
+        if (!unexpectedProjects.isEmpty()) {
+            throw new GradleException(
+                    "Se detectaron carpetas de proyecto adicionales: "
+                            + unexpectedProjects*.absolutePath.join(', ')
+            )
+        }
+
+        File nestedProject = new File(actualRoot, actualRoot.name)
+        if (nestedProject.exists()) {
+            throw new GradleException(
+                    "Se detectó una copia anidada del proyecto: ${nestedProject.absolutePath}"
+            )
+        }
+    }
+}
+
+check.dependsOn verifyWorkspaceRoot
+
+tasks.register('runnerTest', Test) {
+    group = 'verification'
+    description = 'Ejecuta exclusivamente runners.RunnerTest'
+    useJUnit()
+    filter {
+        includeTestsMatching 'runners.RunnerTest'
+    }
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+tasks.register('runnerDryRun', Test) {
+    group = 'verification'
+    description = 'Valida exclusivamente runners.RunnerTest sin ejecutar acciones del navegador'
+    useJUnit()
+    filter {
+        includeTestsMatching 'runners.RunnerTest'
+    }
+    systemProperty 'cucumber.execution.dry-run', 'true'
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
 tasks.register('smokeTest', Test) {
     group = 'verification'
     description = 'Ejecuta únicamente escenarios no destructivos etiquetados como Smoke'

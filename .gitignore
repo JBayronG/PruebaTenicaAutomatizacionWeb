@@ -53,3 +53,10 @@ history/
 .env
 .env.*
 !.env.example
+
+# graphify-axet
+.graphify/
+.axet-code/
+.github/
+.idea
+.graphifyignore

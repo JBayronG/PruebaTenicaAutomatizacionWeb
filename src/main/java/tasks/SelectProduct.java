@@ -12,7 +12,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.Map;
 
-import static userInterfaces.ProductHome.*;
 
 public class SelectProduct implements Task {
 

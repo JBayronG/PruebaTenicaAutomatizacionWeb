@@ -45,4 +45,16 @@ public class ProductHome {
 
     public static final Target METODO_PAGO = Target.the("método de pago")
             .locatedBy(".woocommerce-order-overview__payment-method strong");
+
+    public static final Target NUMERO_PEDIDO_FALLBACK = Target.the("número de pedido alternativo")
+            .locatedBy("//li[contains(@class,'order')]//strong");
+
+    public static final Target FECHA_PEDIDO_FALLBACK = Target.the("fecha del pedido alternativa")
+            .locatedBy("//li[contains(@class,'date')]//strong");
+
+    public static final Target TOTAL_PEDIDO_FALLBACK = Target.the("total del pedido alternativo")
+            .locatedBy("//li[contains(@class,'total')]//strong");
+
+    public static final Target METODO_PAGO_FALLBACK = Target.the("método de pago alternativo")
+            .locatedBy("//li[contains(@class,'method')]//strong");
 }

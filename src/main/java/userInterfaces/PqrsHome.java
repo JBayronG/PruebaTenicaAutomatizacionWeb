@@ -27,7 +27,7 @@ public class PqrsHome {
     public static final Target AUTORIZACION = Target.the("autorización de tratamiento de datos")
             .located(By.name("consent-1"));
     public static final Target ENVIAR = Target.the("crear PQRS")
-            .locatedBy("#forminator-module-1000452 button[type='submit']");
+            .locatedBy("#forminator-module-1000452 button.forminator-button-submit");
     public static final Target MENSAJE_RESPUESTA = Target.the("mensaje de respuesta de PQRS")
             .locatedBy("#forminator-module-1000452 .forminator-response-message");
 }

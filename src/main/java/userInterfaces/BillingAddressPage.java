@@ -27,4 +27,13 @@ public class BillingAddressPage {
 
     public static final Target SUCCESS_MESSAGE = Target.the("confirmación de dirección guardada")
             .located(By.xpath("//*[contains(normalize-space(.),'Dirección guardada correctamente') or contains(normalize-space(.),'dirección guardada correctamente')]"));
+
+    public static final Target WOOCOMMERCE_MESSAGE = Target.the("mensaje de confirmación WooCommerce")
+            .located(By.cssSelector(".woocommerce-message"));
+
+    public static final Target PAGE_BODY = Target.the("contenido de la página")
+            .located(By.tagName("body"));
+
+    public static final Target SELECTED_CITY_OPTION = Target.the("ciudad seleccionada")
+            .located(By.cssSelector("option:checked"));
 }

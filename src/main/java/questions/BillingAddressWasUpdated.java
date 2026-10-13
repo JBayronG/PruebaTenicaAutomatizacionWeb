@@ -2,9 +2,7 @@ package questions;
 
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Question;
-import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
+import userInterfaces.BillingAddressPage;
 
 public class BillingAddressWasUpdated implements Question<Boolean> {
     private final String expectedAddress;
@@ -21,30 +19,25 @@ public class BillingAddressWasUpdated implements Question<Boolean> {
 
     @Override
     public Boolean answeredBy(Actor actor) {
-        var driver = BrowseTheWeb.as(actor).getDriver();
-        boolean successMessageVisible = driver.findElements(By.cssSelector(".woocommerce-message"))
+        boolean successMessageVisible = BillingAddressPage.WOOCOMMERCE_MESSAGE.resolveAllFor(actor)
                 .stream()
-                .anyMatch(WebElement::isDisplayed);
+                .anyMatch(org.openqa.selenium.WebElement::isDisplayed);
 
-        String pageText = driver.findElements(By.tagName("body")).stream()
-                .filter(WebElement::isDisplayed)
-                .map(WebElement::getText)
-                .findFirst()
-                .orElse("");
+        String pageText = BillingAddressPage.PAGE_BODY.resolveFor(actor).getText();
         boolean valuesVisibleInAccount = pageText.contains(expectedAddress)
                 && pageText.contains(expectedCity);
 
-        boolean valuesVisibleInForm = driver.findElements(By.id("billing_address_1")).stream()
-                .filter(WebElement::isDisplayed)
-                .anyMatch(addressField -> expectedAddress.equals(addressField.getAttribute("value")))
-                && driver.findElements(By.id("billing_city")).stream()
-                .filter(WebElement::isDisplayed)
-                .anyMatch(cityField -> expectedCity.equals(cityField.getAttribute("value"))
-                        || expectedCity.equals(cityField.findElements(By.cssSelector("option:checked")).stream()
-                        .map(WebElement::getText)
-                        .findFirst()
-                        .orElse("")));
+        boolean addressMatches = BillingAddressPage.ADDRESS.resolveAllFor(actor).stream()
+                .filter(org.openqa.selenium.WebElement::isDisplayed)
+                .anyMatch(element -> expectedAddress.equals(element.getAttribute("value")));
 
-        return valuesVisibleInAccount || valuesVisibleInForm || successMessageVisible;
+        boolean cityMatches = BillingAddressPage.CITY.resolveAllFor(actor).stream()
+                .filter(org.openqa.selenium.WebElement::isDisplayed)
+                .anyMatch(element -> expectedCity.equals(element.getAttribute("value")))
+                || BillingAddressPage.SELECTED_CITY_OPTION.resolveAllFor(actor).stream()
+                .filter(org.openqa.selenium.WebElement::isDisplayed)
+                .anyMatch(element -> expectedCity.equals(element.getText()));
+
+        return valuesVisibleInAccount || (addressMatches && cityMatches) || successMessageVisible;
     }
 }

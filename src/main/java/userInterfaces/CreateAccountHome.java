@@ -35,4 +35,13 @@ public class CreateAccountHome {
     public static final Target BTTN_REGISTER  = Target.the("boton registrar")
             .located(By.name("register"));
 
+    public static final Target ACCOUNT_CONTENT = Target.the("contenido de la cuenta")
+            .locatedBy(".woocommerce-MyAccount-content");
+
+    public static final Target REGISTRATION_ERRORS = Target.the("errores de registro")
+            .locatedBy(".woocommerce-error, .woocommerce-notices-wrapper .woocommerce-error");
+
+    public static final Target ACCOUNT_LOGOUT = Target.the("enlace de cierre de sesión")
+            .locatedBy("a[href*='customer-logout']");
+
 }
