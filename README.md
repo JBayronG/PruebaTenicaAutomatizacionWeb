@@ -13,6 +13,43 @@ El proyecto usa el patrón Screenplay de Serenity:
 5. Las `questions` consultan el estado de la interfaz para validar resultados.
 6. `RunnerTest` inicia Cucumber mediante JUnit y Serenity genera los reportes.
 
+### Flujo de ejecución Screenplay
+
+La separación de responsabilidades utilizada es:
+
+1. **Feature Gherkin**: describe el comportamiento del usuario y los datos del escenario.
+2. **Step definitions**: traducen cada paso a `Task`, `Interaction` o `Question`; no deben contener selectores ni lógica Selenium.
+3. **Actor**: ejecuta las acciones mediante `attemptsTo()` y consulta resultados mediante `asksFor()`.
+4. **Tasks**: representan acciones de negocio reutilizables, por ejemplo `LoginBonBonite`, `SelectProduct`, `PurchaseProcessProduct`, `CreateAccount` y `UpdateBillingAddress`.
+5. **Interactions**: encapsulan detalles técnicos excepcionales, como `ScrollToCenter` y `ClickJs`.
+6. **User interfaces**: contienen exclusivamente `Target` y localizadores, por ejemplo `ProductHome`, `LoginBonBonitePage` y `CreateAccountHome`.
+7. **Questions**: leen el estado de la aplicación y expresan verificaciones, como `ObtenerResumenOrden`, `PqrsRadicado` y `SuccessfulRegistration`.
+8. **Utils**: concentran configuración transversal, esperas comunes, WebDriver y lectura de Excel.
+
+Las Tasks de selección de producto y compra fueron migradas para usar `Target`, `WaitUntil` y `Click` de Screenplay. El acceso directo a `WebDriver`, `WebDriverWait`, `By` y `WebElement` se eliminó de `SelectProduct` y `PurchaseProcessProduct`. El scroll técnico permanece únicamente en la Interaction `ScrollToCenter`.
+
+### Flujo de registro de usuario
+
+El registro **no requiere iniciar sesión previamente**. `RegistrarUsuario.feature` ejecuta:
+
+1. Carga la fila de registro desde `DatosPruebaWeb.xlsx`.
+2. Abre el navegador mediante `OpenBrowser`.
+3. Navega directamente a `/mi-cuenta/` y activa el formulario con `OpenRegister`.
+4. `CreateAccount` diligencia cédula, nombres, apellidos, correo, contraseña y autorización de tratamiento.
+5. La Task espera contenido de cuenta, enlace de cierre de sesión o un error explícito de registro.
+6. `SuccessfulRegistration` valida el resultado final.
+
+El correo y la contraseña se leen primero de la fila Excel (`Correo electronico` y `Contraseña`), con variables de entorno como fallback. El correo recibe un sufijo único `+xxxxxxxx` para evitar colisiones.
+
+Para ejecutar únicamente el registro, sin PQRS ni compras:
+
+```powershell
+$env:BONBONITE_BASE_URL = "https://<qa-autorizado>/"
+.\\gradlew.bat test --tests runners.RunnerTest `"-Dcucumber.filter.tags=@Smoke and not @PQRS`" -Denvironment=qa
+```
+
+Este escenario está marcado como `@Destructive` porque crea una cuenta persistente. Debe ejecutarse únicamente con correo, contraseña, URL y datos QA autorizados.
+
 ### Estructura principal
 
 | Ruta | Responsabilidad |
@@ -153,6 +190,17 @@ La implementación mantiene los selectores en `BillingAddressPage` y separa la n
 ## Reportes
 
 Serenity genera reportes bajo `target/site/serenity`. Gradle también configura la salida JSON de Cucumber en `target/cucumber-json-report.json`.
+
+## Historial de mantenimiento aplicado
+
+- Se identificó la duplicación del flujo de compras en `GestionProductos.feature`; el siguiente mantenimiento recomendado es consolidarlo en un único `Scenario Outline` parametrizado.
+- `SelectProduct` fue refactorizada para usar los Targets `PRODUCTO_LINK` y `TALLA`, junto con `untilVisible` y `Click`, en lugar de resolver XPath y elementos Selenium directamente.
+- `PurchaseProcessProduct` fue refactorizada para usar `WaitUntil`, `Click` y `ScrollToCenter`, eliminando esperas Selenium y validaciones directas de URL desde la Task.
+- `ProductHome.NUMERO_PEDIDO` se hizo compatible con las variantes de estructura de confirmación de WooCommerce y la Task espera la confirmación del pedido.
+- `LoginBonBonite` y `LoginSupport` se ajustaron para navegar directamente a `/mi-cuenta/`, reconocer estados autenticados alternativos y reportar errores visibles del formulario.
+- `SelectCategory` ahora espera el Target antes de hacer clic y valida que la categoría del escenario coincida con la categoría cargada desde Excel.
+- `CreateAccount` dejó de depender obligatoriamente de `BONBONITE_REGISTER_EMAIL` y `BONBONITE_TEST_PASSWORD` cuando esos valores existen en la fila Excel; además valida la respuesta mediante Targets de `CreateAccountHome`.
+- `runnerDryRun` valida que los steps estén implementados sin abrir navegador. `compileJava`, `testClasses` y las pruebas unitarias se utilizaron como verificaciones de código.
 
 ## Estado y limitaciones conocidas
 

@@ -13,9 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import utils.GlobalWait;
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import net.serenitybdd.screenplay.abilities.BrowseTheWeb;
 
@@ -29,8 +27,8 @@ public class CreateAccount implements Task {
                 .nextLong(1_000_000_000L, 9_999_999_999L));
         String nombre = datosFila.get("Nombres");
         String apellido = datosFila.get("Apellidos");
-        String correo = configuredRegistrationEmail();
-        String pass = requiredEnvironmentVariable("BONBONITE_TEST_PASSWORD");
+        String correo = configuredRegistrationEmail(datosFila);
+        String pass = registrationPassword(datosFila);
         String confirmaPass = pass;
 
         actor.attemptsTo(
@@ -54,19 +52,19 @@ public class CreateAccount implements Task {
         Boolean completed = new WebDriverWait(driver, GlobalWait.TIMEOUT)
                 .withMessage("Registration did not complete or show a validation error")
                 .until(currentDriver -> {
-                    boolean accountPageVisible = currentDriver.findElements(
-                                    By.cssSelector(".woocommerce-MyAccount-content a[href*='customer-logout']"))
+                    boolean accountPageVisible = CreateAccountHome.ACCOUNT_CONTENT.resolveAllFor(actor)
                             .stream()
-                            .anyMatch(WebElement::isDisplayed);
-                    if (accountPageVisible) {
+                            .anyMatch(org.openqa.selenium.WebElement::isDisplayed);
+                    boolean logoutVisible = CreateAccountHome.ACCOUNT_LOGOUT.resolveAllFor(actor)
+                            .stream()
+                            .anyMatch(org.openqa.selenium.WebElement::isDisplayed);
+                    if (accountPageVisible || logoutVisible) {
                         return true;
                     }
 
-                    boolean registrationError = currentDriver.findElements(By.cssSelector(
-                                    ".woocommerce-error, .woocommerce-notices-wrapper .woocommerce-error, "
-                                            + ".woocommerce-notices-wrapper .woocommerce-info"))
+                    boolean registrationError = CreateAccountHome.REGISTRATION_ERRORS.resolveAllFor(actor)
                             .stream()
-                            .anyMatch(WebElement::isDisplayed);
+                            .anyMatch(org.openqa.selenium.WebElement::isDisplayed);
                     return registrationError ? false : null;
                 });
         if (!completed) {
@@ -78,11 +76,14 @@ public class CreateAccount implements Task {
         return Tasks.instrumented(CreateAccount.class);
     }
 
-    private String configuredRegistrationEmail() {
-        String configuredEmail = System.getenv("BONBONITE_REGISTER_EMAIL");
+    private String configuredRegistrationEmail(Map<String, String> testData) {
+        String configuredEmail = testData == null ? null : testData.get("Correo electronico");
+        if (configuredEmail == null || configuredEmail.isBlank()) {
+            configuredEmail = System.getenv("BONBONITE_REGISTER_EMAIL");
+        }
         if (configuredEmail == null || configuredEmail.isBlank()) {
             throw new IllegalStateException(
-                    "Configure BONBONITE_REGISTER_EMAIL with an authorized test mailbox"
+                    "Configure Correo electronico in the registration data or BONBONITE_REGISTER_EMAIL"
             );
         }
         int atIndex = configuredEmail.indexOf('@');
@@ -94,6 +95,19 @@ public class CreateAccount implements Task {
                 + "+"
                 + UUID.randomUUID().toString().substring(0, 8)
                 + configuredEmail.substring(atIndex);
+    }
+
+    private String registrationPassword(Map<String, String> testData) {
+        String password = testData == null ? null : testData.get("Contraseña");
+        if (password == null || password.isBlank()) {
+            password = System.getenv("BONBONITE_TEST_PASSWORD");
+        }
+        if (password == null || password.isBlank()) {
+            throw new IllegalStateException(
+                    "Configure Contraseña in the registration data or BONBONITE_TEST_PASSWORD"
+            );
+        }
+        return password.trim();
     }
 
     private String requiredEnvironmentVariable(String variableName) {

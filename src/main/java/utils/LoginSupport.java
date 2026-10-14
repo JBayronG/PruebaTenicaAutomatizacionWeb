@@ -51,4 +51,30 @@ public final class LoginSupport {
                 .until(currentDriver -> isVisible(actor, target));
     }
 
+    public static <T extends Actor> void waitForAuthenticatedAccount(T actor, WebDriver driver) {
+        new WebDriverWait(driver, WAIT_TIMEOUT)
+                .withMessage("Login did not reach an authenticated account state")
+                .until(currentDriver -> isVisible(actor, userInterfaces.LoginBonBonitePage.ACCOUNT_LOGOUT)
+                        || isVisible(actor, userInterfaces.LoginBonBonitePage.ACCOUNT_CONTENT)
+                        || isVisible(actor, userInterfaces.LoginBonBonitePage.LOGIN_ERRORS)
+                        || loginFormWasReplaced(actor));
+
+        if (isVisible(actor, userInterfaces.LoginBonBonitePage.LOGIN_ERRORS)) {
+            String error = userInterfaces.LoginBonBonitePage.LOGIN_ERRORS.resolveAllFor(actor).stream()
+                    .filter(org.openqa.selenium.WebElement::isDisplayed)
+                    .map(org.openqa.selenium.WebElement::getText)
+                    .map(String::trim)
+                    .filter(value -> !value.isBlank())
+                    .findFirst()
+                    .orElse("The site rejected the supplied credentials");
+            throw new IllegalStateException("Login failed: " + error);
+        }
+    }
+
+    private static <T extends Actor> boolean loginFormWasReplaced(T actor) {
+        return !isVisible(actor, userInterfaces.LoginBonBonitePage.INPUT_USER)
+                && !isVisible(actor, userInterfaces.LoginBonBonitePage.INPUT_PASS)
+                && !isVisible(actor, userInterfaces.LoginBonBonitePage.BTTN_LOGIN);
+    }
+
 }

@@ -35,7 +35,7 @@ public class ProductHome {
             .locatedBy("//h1[normalize-space()='Finalizar compra']");
 
     public static final Target NUMERO_PEDIDO = Target.the("número de pedido")
-            .located(By.cssSelector(".woocommerce-order-overview__order strong"));
+            .locatedBy("//*[contains(@class,'woocommerce-order-overview__order') or (self::li and contains(@class,'order'))]//strong");
 
     public static final Target FECHA_PEDIDO = Target.the("fecha del pedido")
             .located(By.cssSelector(".woocommerce-order-overview__date strong"));

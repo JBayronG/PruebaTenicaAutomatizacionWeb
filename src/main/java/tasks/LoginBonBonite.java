@@ -39,7 +39,6 @@ public class LoginBonBonite implements Task {
                 ClickJs.en(LoginBonBonitePage.BTTN_LOGIN)
         );
 
-        LoginSupport.waitFor(actor, driver, LoginBonBonitePage.ACCOUNT_LOGOUT,
-                "Login did not reach an authenticated account state");
+        LoginSupport.waitForAuthenticatedAccount(actor, driver);
     }
 }
