@@ -1,12 +1,14 @@
 package tasks;
 
-import interactions.ClickJs;
 import net.serenitybdd.core.Serenity;
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
 import net.serenitybdd.screenplay.Tasks;
+import net.serenitybdd.screenplay.actions.Click;
 
 import java.util.Map;
+
+import static utils.GlobalWait.untilVisible;
 
 import static userInterfaces.ProductHome.*;
 
@@ -29,13 +31,17 @@ public class SelectCategory implements Task {
 
         String categoria = datosFila.get("Nombre Categoria");
 
-        switch (opcion) {
-            case "zapatos", "bolsos", "cinturones", "accesorios", "outlet":
-                actor.attemptsTo(ClickJs.en(CATEGORIA.of(categoria)));
-                break;
-
-            default:
-                throw new IllegalArgumentException("No se encontro el producto");
+        if (categoria == null || categoria.isBlank()) {
+            throw new IllegalArgumentException("La fila de datos no contiene una categoría");
         }
+
+        if (!opcion.equalsIgnoreCase(categoria)) {
+            throw new IllegalArgumentException("La categoría del escenario no coincide con el Excel");
+        }
+
+        actor.attemptsTo(
+                untilVisible(CATEGORIA.of(categoria)),
+                Click.on(CATEGORIA.of(categoria))
+        );
     }
 }

@@ -43,3 +43,19 @@ bin/
 .DS_Store
 
 target/
+.graphify/
+.idea/
+build/
+gradle/
+history/
+
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+
+# graphify-axet
+.graphify/
+.axet-code/
+.github/
+.graphifyignore

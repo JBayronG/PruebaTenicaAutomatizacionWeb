@@ -8,7 +8,8 @@ public class ProductHome {
             .locatedBy("//ul[@id='menu-categories-menu']//a[normalize-space()='{0}']");
 
     public static final Target PRODUCTO_LINK = Target.the("link producto {0}")
-            .locatedBy("//h4[normalize-space()='{0}']/ancestor::div[contains(@class,'group')]//a[@href]");
+            .locatedBy("//h4[normalize-space()='{0}']/ancestor::div[contains(@class,'group')][1]"
+                    + "//a[contains(@href,'/producto/')]");
 
     public static final Target TALLA = Target.the("talla {0}")
             .locatedBy("//button[@data-attribute_name='attribute_pa_talla' and @data-value='{0}']");
@@ -34,14 +35,26 @@ public class ProductHome {
             .locatedBy("//h1[normalize-space()='Finalizar compra']");
 
     public static final Target NUMERO_PEDIDO = Target.the("número de pedido")
-            .locatedBy("//li[contains(@class,'order')]//strong");
+            .locatedBy("//*[contains(@class,'woocommerce-order-overview__order') or (self::li and contains(@class,'order'))]//strong");
 
     public static final Target FECHA_PEDIDO = Target.the("fecha del pedido")
-            .locatedBy("//li[contains(@class,'date')]//strong");
+            .located(By.cssSelector(".woocommerce-order-overview__date strong"));
 
     public static final Target TOTAL_PEDIDO = Target.the("total del pedido")
-            .locatedBy("//li[contains(@class,'total')]//strong");
+            .located(By.cssSelector(".woocommerce-order-overview__total strong"));
 
     public static final Target METODO_PAGO = Target.the("método de pago")
+            .located(By.cssSelector(".woocommerce-order-overview__payment-method strong"));
+
+    public static final Target NUMERO_PEDIDO_FALLBACK = Target.the("número de pedido alternativo")
+            .locatedBy("//li[contains(@class,'order')]//strong");
+
+    public static final Target FECHA_PEDIDO_FALLBACK = Target.the("fecha del pedido alternativa")
+            .locatedBy("//li[contains(@class,'date')]//strong");
+
+    public static final Target TOTAL_PEDIDO_FALLBACK = Target.the("total del pedido alternativo")
+            .locatedBy("//li[contains(@class,'total')]//strong");
+
+    public static final Target METODO_PAGO_FALLBACK = Target.the("método de pago alternativo")
             .locatedBy("//li[contains(@class,'method')]//strong");
 }

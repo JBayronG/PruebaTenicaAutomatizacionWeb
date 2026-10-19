@@ -1,0 +1,235 @@
+# Automatización web Bon-Bonite
+
+Suite de automatización de interfaz web construida con Java, Gradle, Serenity BDD, Cucumber y Selenium. Los escenarios describen flujos de registro, compras, PQRS y actualización de la dirección de facturación en el sitio Bon-Bonite.
+
+## Arquitectura
+
+El proyecto usa el patrón Screenplay de Serenity:
+
+1. Los archivos `.feature` expresan los escenarios en Gherkin.
+2. Las definiciones de pasos de Cucumber traducen esos pasos a acciones.
+3. Las `tasks` encapsulan acciones de los actores, como iniciar sesión o seleccionar un producto.
+4. Las clases `userInterfaces` centralizan los selectores de la página.
+5. Las `questions` consultan el estado de la interfaz para validar resultados.
+6. `RunnerTest` inicia Cucumber mediante JUnit y Serenity genera los reportes.
+
+### Flujo de ejecución Screenplay
+
+La separación de responsabilidades utilizada es:
+
+1. **Feature Gherkin**: describe el comportamiento del usuario y los datos del escenario.
+2. **Step definitions**: traducen cada paso a `Task`, `Interaction` o `Question`; no deben contener selectores ni lógica Selenium.
+3. **Actor**: ejecuta las acciones mediante `attemptsTo()` y consulta resultados mediante `asksFor()`.
+4. **Tasks**: representan acciones de negocio reutilizables, por ejemplo `LoginBonBonite`, `SelectProduct`, `PurchaseProcessProduct`, `CreateAccount` y `UpdateBillingAddress`.
+5. **Interactions**: encapsulan detalles técnicos excepcionales, como `ScrollToCenter` y `ClickJs`.
+6. **User interfaces**: contienen exclusivamente `Target` y localizadores, por ejemplo `ProductHome`, `LoginBonBonitePage` y `CreateAccountHome`.
+7. **Questions**: leen el estado de la aplicación y expresan verificaciones, como `ObtenerResumenOrden`, `PqrsRadicado` y `SuccessfulRegistration`.
+8. **Utils**: concentran configuración transversal, esperas comunes, WebDriver y lectura de Excel.
+
+Las Tasks de selección de producto y compra fueron migradas para usar `Target`, `WaitUntil` y `Click` de Screenplay. El acceso directo a `WebDriver`, `WebDriverWait`, `By` y `WebElement` se eliminó de `SelectProduct` y `PurchaseProcessProduct`. El scroll técnico permanece únicamente en la Interaction `ScrollToCenter`.
+
+### Flujo de registro de usuario
+
+El registro **no requiere iniciar sesión previamente**. `RegistrarUsuario.feature` ejecuta:
+
+1. Carga la fila de registro desde `DatosPruebaWeb.xlsx`.
+2. Abre el navegador mediante `OpenBrowser`.
+3. Navega directamente a `/mi-cuenta/` y activa el formulario con `OpenRegister`.
+4. `CreateAccount` diligencia cédula, nombres, apellidos, correo, contraseña y autorización de tratamiento.
+5. La Task espera contenido de cuenta, enlace de cierre de sesión o un error explícito de registro.
+6. `SuccessfulRegistration` valida el resultado final.
+
+El correo y la contraseña se leen primero de la fila Excel (`Correo electronico` y `Contraseña`), con variables de entorno como fallback. El correo recibe un sufijo único `+xxxxxxxx` para evitar colisiones.
+
+Para ejecutar únicamente el registro, sin PQRS ni compras:
+
+```powershell
+$env:BONBONITE_BASE_URL = "https://<qa-autorizado>/"
+.\\gradlew.bat test --tests runners.RunnerTest `"-Dcucumber.filter.tags=@Smoke and not @PQRS`" -Denvironment=qa
+```
+
+Este escenario está marcado como `@Destructive` porque crea una cuenta persistente. Debe ejecutarse únicamente con correo, contraseña, URL y datos QA autorizados.
+
+### Estructura principal
+
+| Ruta | Responsabilidad |
+| --- | --- |
+| `src/test/resources/features/` | Escenarios Gherkin para PQRS, compras, registro y facturación |
+| `src/test/java/stepDefinitions/` | Enlace entre pasos de Cucumber y acciones Screenplay |
+| `src/test/java/runners/RunnerTest.java` | Runner JUnit/Cucumber |
+| `src/main/java/tasks/` | Acciones y flujos de usuario |
+| `src/main/java/userInterfaces/` | Selectores de interfaz |
+| `src/main/java/questions/` | Consultas y verificaciones |
+| `src/main/java/utils/` | WebDriver y lectura de datos Excel |
+| `src/test/resources/excel/` | Datos usados por los escenarios |
+
+## Tecnologías y configuración
+
+| Tecnología | Uso |
+| --- | --- |
+| Java 17 | Lenguaje y toolchain configurada en Gradle |
+| Gradle 8.14.4 Wrapper | Construcción y ejecución reproducible |
+| Serenity BDD 3.6.12 | Automatización Screenplay e informes |
+| Cucumber 7.11.2 | Especificación BDD en Gherkin |
+| JUnit 4.13.2 | Integración de pruebas |
+| Selenium 4.18.1 | Automatización del navegador |
+| WebDriverManager 5.7.0 | Gestión del controlador de Chrome |
+| Apache POI 5.2.5 | Lectura de archivos Excel |
+
+La codificación de compilación Java está fijada en UTF-8 para que la compilación sea consistente en sistemas con distintas configuraciones regionales.
+Gradle pasa al proceso de pruebas solo propiedades `webdriver.*`, `serenity.*` y `cucumber.*`; no debe copiar propiedades internas como `java.home`, porque el proceso de pruebas utiliza el JDK de la toolchain.
+
+## Requisitos previos
+
+- Windows con PowerShell.
+- JDK 17. El Wrapper descarga Gradle; la toolchain de Gradle debe poder localizar un JDK 17.
+- Google Chrome instalado y acceso a Maven Central y al sitio bajo prueba para ejecutar escenarios de navegador.
+
+Comprueba la versión de Java con:
+
+```powershell
+java -version
+```
+
+En el entorno donde se revisó este proyecto, Gradle localizó una instalación de JDK 17 aunque `java` en el `PATH` apuntaba a Java 21.
+
+## Verificación rápida
+
+Desde la carpeta del proyecto, ejecuta:
+
+```powershell
+.\gradlew.bat clean testClasses
+```
+
+Esto compila el código de producción y de pruebas, sin iniciar Chrome ni enviar datos al sitio. Es la verificación rápida recomendada para confirmar que el proyecto y sus dependencias compilan.
+
+Para compilar y ejecutar el runner de Cucumber:
+
+```powershell
+.\gradlew.bat test --tests runners.RunnerTest
+```
+
+**Ejecución local:** por defecto el perfil `local` usa `https://www.bon-bonite.com/`. Puedes seleccionar el perfil explícitamente con `-Denvironment=local`. Para QA, usa `-Denvironment=qa` y define `BONBONITE_BASE_URL` antes de ejecutar. El runner incluye todos los features, sin filtro de tags: registro, compras, PQRS y actualización de facturación. Algunos escenarios tienen efectos persistentes; ejecútalos solo con autorización y datos de prueba aprobados.
+
+Las pruebas de compra requieren un usuario QA en el entorno del proceso que lanza Gradle; no vuelven a las credenciales obsoletas del Excel:
+
+```powershell
+$env:BONBONITE_TEST_USER = "<usuario QA autorizado>"
+$env:BONBONITE_TEST_PASSWORD = "<contraseña QA>"
+```
+
+El registro requiere un correo de prueba controlado por el equipo. Debe aceptar alias `+` porque se añade un sufijo único para cada ejecución. La contraseña se toma de `BONBONITE_TEST_PASSWORD`:
+
+```powershell
+$env:BONBONITE_REGISTER_EMAIL = "<correo QA controlado>"
+```
+
+No guardes estos valores en el repositorio ni en la línea de comandos; define las variables en la sesión local antes de ejecutar. El test genera un identificador distinto y añade un sufijo al correo para evitar colisiones.
+
+El escenario `@ActualizarFacturacion` reutiliza las credenciales QA `BONBONITE_TEST_USER` y `BONBONITE_TEST_PASSWORD`. Cambia y guarda la dirección por `Cr 67 #54-77` y la ciudad por `Itagui`. Para ejecutarlo únicamente en un ambiente QA autorizado:
+
+```powershell
+.\gradlew.bat test --tests runners.RunnerTest '-Dcucumber.filter.tags=@ActualizarFacturacion'
+```
+
+Esta ejecución modifica la información de facturación de la cuenta y persiste los valores; no es un dry-run.
+
+El E2E de PQRS usa el formulario público y toma sus datos de variables de entorno, no del repositorio:
+
+```powershell
+$env:BONBONITE_PQRS_STORE = "<punto de venta visible en el formulario>"
+$env:BONBONITE_PQRS_FULL_NAME = "<nombre de prueba autorizado>"
+$env:BONBONITE_PQRS_ADDRESS = "<dirección de prueba>"
+$env:BONBONITE_PQRS_DOCUMENT_TYPE = "CC"
+$env:BONBONITE_PQRS_DOCUMENT_NUMBER = "<documento de prueba autorizado>"
+$env:BONBONITE_PQRS_PHONE = "<teléfono de prueba>"
+$env:BONBONITE_PQRS_EMAIL = "<correo de prueba>"
+$env:BONBONITE_PQRS_REQUEST_TYPE = "Queja"
+$env:BONBONITE_PQRS_DESCRIPTION = "<descripción de prueba>"
+.\gradlew.bat test --tests runners.RunnerTest -Dheadless.mode=false
+```
+
+Usa únicamente identidad y valores de prueba aprobados. La propiedad `headless.mode=false` es necesaria porque Serenity se configura headless de forma predeterminada y el reCAPTCHA requiere interacción visible. El escenario espera hasta cinco minutos a que una persona lo resuelva; después envía la solicitud y valida el número de radicado. La ejecución crea una solicitud persistente. `BONBONITE_PQRS_CAUSE` se debe definir si el tipo elegido muestra un campo de causal obligatorio.
+
+### URL por ambiente
+
+Ejecución local contra el sitio configurado:
+
+```powershell
+.\gradlew.bat test --tests runners.RunnerTest -Denvironment=local
+```
+
+Para QA, la URL se toma de `BONBONITE_BASE_URL`:
+
+```powershell
+$env:BONBONITE_BASE_URL = "https://<url-autorizada-de-qa>/"
+.\gradlew.bat test --tests runners.RunnerTest -Denvironment=qa
+```
+
+También puedes sobrescribirla directamente con `-Dwebdriver.base.url=https://<url-autorizada>/`.
+
+Usa únicamente una URL de QA autorizada y asegúrate de que los datos Excel correspondan a cuentas de prueba. No incluyas credenciales reales en el código o en la documentación.
+
+## Flujo de actualización de facturación
+
+El escenario `@ActualizarFacturacion` sigue el flujo de usuario real:
+
+1. Abre la cuenta autenticada en `/mi-cuenta/`.
+2. Selecciona exclusivamente el enlace `Datos` del menú de navegación de cuenta.
+3. Espera la sección de dirección de facturación y desplaza la vista hasta ella.
+4. Selecciona el botón `Editar` asociado a la dirección de facturación.
+5. Diligencia la dirección y selecciona la ciudad en el control desplegable.
+6. Guarda mediante el formulario AJAX y valida la confirmación y los valores persistidos.
+
+La implementación mantiene los selectores en `BillingAddressPage` y separa la navegación (`OpenBillingAddressEditor`) del diligenciamiento (`FillBillingAddress`). La ejecución validada del escenario es:
+
+```powershell
+.\\gradlew.bat test --tests runners.RunnerTest -Denvironment=local "-Dcucumber.filter.tags=@ActualizarFacturacion"
+```
+
+## Reportes
+
+Serenity genera reportes bajo `target/site/serenity`. Gradle también configura la salida JSON de Cucumber en `target/cucumber-json-report.json`.
+
+## Historial de mantenimiento aplicado
+
+- Se identificó la duplicación del flujo de compras en `GestionProductos.feature`; el siguiente mantenimiento recomendado es consolidarlo en un único `Scenario Outline` parametrizado.
+- `SelectProduct` fue refactorizada para usar los Targets `PRODUCTO_LINK` y `TALLA`, junto con `untilVisible` y `Click`, en lugar de resolver XPath y elementos Selenium directamente.
+- `PurchaseProcessProduct` fue refactorizada para usar `WaitUntil`, `Click` y `ScrollToCenter`, eliminando esperas Selenium y validaciones directas de URL desde la Task.
+- `ProductHome.NUMERO_PEDIDO` se hizo compatible con las variantes de estructura de confirmación de WooCommerce y la Task espera la confirmación del pedido.
+- `LoginBonBonite` y `LoginSupport` se ajustaron para navegar directamente a `/mi-cuenta/`, reconocer estados autenticados alternativos y reportar errores visibles del formulario.
+- `SelectCategory` ahora espera el Target antes de hacer clic y valida que la categoría del escenario coincida con la categoría cargada desde Excel.
+- `CreateAccount` dejó de depender obligatoriamente de `BONBONITE_REGISTER_EMAIL` y `BONBONITE_TEST_PASSWORD` cuando esos valores existen en la fila Excel; además valida la respuesta mediante Targets de `CreateAccountHome`.
+- `runnerDryRun` valida que los steps estén implementados sin abrir navegador. `compileJava`, `testClasses` y las pruebas unitarias se utilizaron como verificaciones de código.
+
+## Estado y limitaciones conocidas
+
+- `RunnerTest` ejecuta todos los features del proyecto; no utiliza filtro de tags.
+- Análisis de la última ejecución E2E completa antes de los cambios recientes: 7 escenarios; zapatos y bolsos pasaron. PQRS no tenía configuradas las nueve variables de datos; cinturones no encontró la variante seleccionada al cargar; accesorios y outlet no encontraron el enlace de cuenta; el registro no llegó a una sesión autenticada. Esta ejecución no se debe confundir con el `dry-run`.
+- Mantenimiento aplicado: login y registro navegan directamente a `/mi-cuenta/` en vez de depender de una posición fija de enlace; la selección de producto espera el enlace y las variantes asíncronas; la confirmación de compra espera el número de orden de WooCommerce; el registro espera la sesión autenticada o un error de formulario antes de validar el resultado.
+- Reanálisis autorizado posterior, solo para los cuatro casos que habían fallado: cinturones, accesorios y outlet se detuvieron antes de buscar productos o enviar pedidos porque el sitio rechazó el usuario configurado; el registro agotó el tiempo esperando una respuesta tras enviar el formulario. Los tres casos de compra no llegaron a enviar pedidos en esa ejecución. El estado final del registro no se pudo confirmar; verifica el resultado en el sitio antes de repetir el registro para evitar duplicados.
+- Ajuste tras ese reanálisis: login y registro requieren credenciales QA suministradas por entorno (sin fallback al Excel), distinguen rechazo de espera agotada y reportan fallos de validación de forma explícita.
+- Los cuatro nombres de producto inicialmente descontinuados se reemplazaron por opciones publicadas: Baleta en cuero borgoña (talla 35), Manos libres en cuero luna, Cinturón en cuero negro (talla 14) y Baleta en cuero con glitter color negro ónix (talla 39). La fila de accesorios se conserva.
+- PQRS usa el formulario real y valida el radicado, pero no se envía si faltan datos de prueba aprobados; en ese caso Cucumber lo reporta como pendiente. No se inventan datos para producción.
+- Verificación segura posterior a corregir el paso Then de registro: `.\gradlew.bat clean testClasses` compiló correctamente y `.\gradlew.bat test --tests runners.RunnerTest '-Dcucumber.execution.dry-run=true'` resolvió los 8 casos. El `dry-run` no abre navegador ni comprueba el comportamiento E2E.
+- El último intento de reejecución quedó detenido antes de Gradle porque las variables `BONBONITE_TEST_USER`, `BONBONITE_TEST_PASSWORD` y `BONBONITE_REGISTER_EMAIL` no estaban disponibles en el entorno del proceso. No se inició otra sesión de navegador.
+- Verificación del pre-requisito de PQRS: al filtrar `@PQRS` sin variables, el hook detuvo el escenario antes de abrir Chrome; Gradle reporta `PendingException` como fallo, no como test ignorado. Esto evita presentar una solicitud vacía, pero la suite seguirá roja hasta configurar datos de prueba aprobados.
+- No se relanzaron los escenarios mutadores después del último ajuste: los casos de compra aprobados antes ya pueden haber creado pedidos; completar los escenarios de cinturones, accesorios u outlet puede crear pedidos adicionales, y el registro podría crear otra cuenta. PQRS crea un expediente real y exige CAPTCHA visible. Para un E2E completo se requiere QA/CAPTCHA de prueba o autorización específica de cada efecto persistente.
+- La URL de ejecución debe definirse mediante `BONBONITE_BASE_URL`; no se configura una URL pública por defecto. Para automatización habitual conviene usar un ambiente QA y datos de prueba dedicados.
+
+## Estrategia de ejecución segura
+
+Los escenarios mutadores están etiquetados con `@Destructive` y `@RequiresQAData`. El comando general recomendado para validación estructural es:
+
+```powershell
+gradlew.bat dryRun
+```
+
+Para una suite no destructiva se puede usar el task `smokeTest`; requiere que existan escenarios con `@Smoke` que no creen pedidos ni modifiquen cuentas. Las ejecuciones E2E destructivas deben invocarse explícitamente con credenciales QA autorizadas y `BONBONITE_BASE_URL`:
+
+```powershell
+$env:BONBONITE_BASE_URL = "https://<qa-autorizado>/"
+gradlew.bat test --tests runners.RunnerTest -Dcucumber.filter.tags="@Regression and @RequiresQAData"
+```
+
+La compilación y el dry-run son aptos para CI sin abrir navegador. La suite E2E real permanece separada por sus efectos persistentes, CAPTCHA y dependencia del ambiente.

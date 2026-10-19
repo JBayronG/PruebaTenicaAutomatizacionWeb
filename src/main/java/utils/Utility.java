@@ -10,11 +10,14 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
-
-import static jxl.biff.FormatRecord.logger;
+import java.util.logging.Logger;
 
 public class Utility {
+    private static final Logger logger = Logger.getLogger(Utility.class.getName());
     public static List<Map<String, String>> readExcelTarifas(String resourcePath, String hoja) {
         List<Map<String, String>> datos = new ArrayList<>();
 
@@ -70,21 +73,18 @@ public class Utility {
         // Usar classpath: resourcePath debe ser como "/src/test/resources/excel/..."
         try (InputStream inputStream = Utility.class.getResourceAsStream(resourcePath)) {
             if (inputStream == null) {
-                System.err.println("ERROR: No se encontró el archivo en el classpath: " + resourcePath);
-                return null;
+                throw new IllegalArgumentException("No se encontró el archivo Excel en classpath: " + resourcePath);
             }
 
             try (XSSFWorkbook newWorkbook = new XSSFWorkbook(inputStream)) {
                 Sheet sheet = newWorkbook.getSheet(sheetName);
                 if (sheet == null) {
-                    System.err.println("ERROR: Hoja no encontrada: " + sheetName);
-                    return null;
+                    throw new IllegalArgumentException("No se encontró la hoja Excel: " + sheetName);
                 }
 
                 Iterator<Row> rowIterator = sheet.iterator();
                 if (!rowIterator.hasNext()) {
-                    System.err.println("ERROR: El archivo Excel está vacío.");
-                    return null;
+                    throw new IllegalArgumentException("El archivo Excel está vacío: " + resourcePath);
                 }
 
                 Row titulos = rowIterator.next(); // Primera fila = encabezados
@@ -113,6 +113,51 @@ public class Utility {
         }
 
         return arrayListDatoPlanTrabajo;
+    }
+
+    public static void saveExcelValue(String filePath, String sheetName, int dataRowNumber,
+                                      String columnName, String value) {
+        if (dataRowNumber < 1) {
+            throw new IllegalArgumentException("La fila de datos debe ser mayor que cero");
+        }
+        Path workbookPath = Path.of(filePath);
+        try (Workbook workbook = Files.exists(workbookPath)
+                ? new XSSFWorkbook(Files.newInputStream(workbookPath))
+                : new XSSFWorkbook()) {
+            Sheet sheet = workbook.getSheet(sheetName);
+            if (sheet == null) {
+                sheet = workbook.createSheet(sheetName);
+            }
+
+            Row header = sheet.getRow(0);
+            if (header == null) {
+                header = sheet.createRow(0);
+            }
+            int columnIndex = findOrCreateColumn(header, columnName);
+            Row dataRow = sheet.getRow(dataRowNumber);
+            if (dataRow == null) {
+                dataRow = sheet.createRow(dataRowNumber);
+            }
+            dataRow.createCell(columnIndex, CellType.STRING).setCellValue(value == null ? "" : value);
+
+            try (OutputStream output = Files.newOutputStream(workbookPath)) {
+                workbook.write(output);
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException("No se pudo guardar el valor en el archivo Excel", exception);
+        }
+    }
+
+    private static int findOrCreateColumn(Row header, String columnName) {
+        for (int index = 0; index < header.getLastCellNum(); index++) {
+            Cell cell = header.getCell(index, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+            if (columnName.equals(getCellValueAsString(cell).trim())) {
+                return index;
+            }
+        }
+        int newIndex = Math.max(header.getLastCellNum(), 0);
+        header.createCell(newIndex, CellType.STRING).setCellValue(columnName);
+        return newIndex;
     }
 
     private static String getCellValueAsString(Cell cell) {
@@ -155,14 +200,6 @@ public class Utility {
             case STRING: return celda.getStringCellValue();
             case NUMERIC: return String.valueOf(celda.getNumericCellValue());
             default: return "";
-        }
-    }
-
-    public static void tiempoEspera() {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 

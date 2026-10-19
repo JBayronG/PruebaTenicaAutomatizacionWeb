@@ -28,6 +28,14 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+processTestResources {
+    exclude '**/~$*'
+}
+
 ext {
     serenityVersion = '3.6.12'
     cucumberVersion = '7.11.2'
@@ -36,55 +44,115 @@ ext {
 
 dependencies {
 
-    // 🔷 Serenity Core
+    // Dependencias de automatización usadas por los escenarios
     implementation "net.serenity-bdd:serenity-core:${serenityVersion}"
     implementation "net.serenity-bdd:serenity-junit:${serenityVersion}"
-
-    // 🔷 Screenplay
     implementation "net.serenity-bdd:serenity-screenplay:${serenityVersion}"
     implementation "net.serenity-bdd:serenity-screenplay-webdriver:${serenityVersion}"
-
-    // 🔷 Cucumber (BDD)
     implementation "net.serenity-bdd:serenity-cucumber:${serenityVersion}"
     implementation "io.cucumber:cucumber-java:${cucumberVersion}"
     implementation "io.cucumber:cucumber-junit:${cucumberVersion}"
-
-    // 🔷 Selenium
     implementation "org.seleniumhq.selenium:selenium-java:4.18.1"
-
-    // 🔷 WebDriverManager (manejo automático de drivers)
     implementation "io.github.bonigarcia:webdrivermanager:5.7.0"
-
-    // 🔷 Manejo de datos (JSON)
     implementation "com.fasterxml.jackson.core:jackson-databind:2.17.0"
-
-    // 🔷 Manejo de Excel
     implementation "org.apache.poi:poi:5.2.5"
     implementation "org.apache.poi:poi-ooxml:5.2.5"
-
-    // 🔷 Validaciones
     implementation "org.assertj:assertj-core:3.25.3"
     implementation "org.hamcrest:hamcrest:2.2"
-
-    // 🔷 Lombok (modelos más limpios)
     compileOnly "org.projectlombok:lombok:1.18.32"
     annotationProcessor "org.projectlombok:lombok:1.18.32"
-
-    // 🔷 Logs
     implementation "org.slf4j:slf4j-simple:2.0.12"
-
-    // 🔷 JUnit
+    implementation "org.apache.logging.log4j:log4j-core:2.23.1"
     testImplementation "junit:junit:${junitVersion}"
 }
 
 test {
     useJUnit()
+    systemProperty 'file.encoding', 'UTF-8'
 
-    systemProperties System.getProperties()
+    def testSystemPropertyPrefixes = ['webdriver.', 'serenity.', 'cucumber.', 'headless.', 'environment.']
+    systemProperties System.getProperties().findAll { key, value ->
+        testSystemPropertyPrefixes.any { prefix -> key.toString().startsWith(prefix) }
+    }
 
     testLogging {
         events "PASSED", "FAILED", "SKIPPED"
     }
+}
+
+tasks.register('verifyWorkspaceRoot') {
+    group = 'verification'
+    description = 'Verifica que solo exista la carpeta principal del proyecto'
+    doLast {
+        File expectedRoot = new File(
+                'C:/Automatizacion/Practivas Automatización Web/PruebaTenicaAutomatizacionWeb'
+        ).canonicalFile
+        File actualRoot = rootDir.canonicalFile
+        if (actualRoot != expectedRoot) {
+            throw new GradleException(
+                    "El proyecto debe ejecutarse desde ${expectedRoot.absolutePath}; "
+                            + "ruta detectada: ${actualRoot.absolutePath}"
+            )
+        }
+
+        File parent = actualRoot.parentFile
+        File[] siblingProjects = parent.listFiles()
+        List<File> unexpectedProjects = siblingProjects
+                .findAll { it.isDirectory() && it.name.toLowerCase().contains('pruebatenica') }
+                .findAll { it.canonicalFile != actualRoot }
+        if (!unexpectedProjects.isEmpty()) {
+            throw new GradleException(
+                    "Se detectaron carpetas de proyecto adicionales: "
+                            + unexpectedProjects*.absolutePath.join(', ')
+            )
+        }
+
+        File nestedProject = new File(actualRoot, actualRoot.name)
+        if (nestedProject.exists()) {
+            throw new GradleException(
+                    "Se detectó una copia anidada del proyecto: ${nestedProject.absolutePath}"
+            )
+        }
+    }
+}
+
+check.dependsOn verifyWorkspaceRoot
+
+tasks.register('runnerTest', Test) {
+    group = 'verification'
+    description = 'Ejecuta exclusivamente runners.RunnerTest'
+    useJUnit()
+    filter {
+        includeTestsMatching 'runners.RunnerTest'
+    }
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+tasks.register('runnerDryRun', Test) {
+    group = 'verification'
+    description = 'Valida exclusivamente runners.RunnerTest sin ejecutar acciones del navegador'
+    useJUnit()
+    filter {
+        includeTestsMatching 'runners.RunnerTest'
+    }
+    systemProperty 'cucumber.execution.dry-run', 'true'
+    systemProperty 'file.encoding', 'UTF-8'
+}
+
+tasks.register('smokeTest', Test) {
+    group = 'verification'
+    description = 'Ejecuta únicamente escenarios no destructivos etiquetados como Smoke'
+    useJUnit()
+    filter { includeTestsMatching 'runners.RunnerTest' }
+    systemProperty 'cucumber.filter.tags', '@Smoke and not @Destructive'
+}
+
+tasks.register('dryRun', Test) {
+    group = 'verification'
+    description = 'Valida que todos los steps Gherkin estén implementados sin abrir navegador'
+    useJUnit()
+    filter { includeTestsMatching 'runners.RunnerTest' }
+    systemProperty 'cucumber.execution.dry-run', 'true'
 }
 
 serenity {

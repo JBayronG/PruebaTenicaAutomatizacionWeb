@@ -10,7 +10,6 @@ import net.thucydides.core.util.EnvironmentVariables;
 import utils.MyChromeDriver;
 
 import static jxl.biff.FormatRecord.logger;
-import static net.serenitybdd.screenplay.actors.OnStage.theActorInTheSpotlight;
 
 public class OpenBrowser implements Task {
 
@@ -25,7 +24,7 @@ public class OpenBrowser implements Task {
         //Obtener la url
         String ambienteEjecucion = EnvironmentSpecificConfiguration.from(environmentVariables)
                 .getProperty("webdriver.base.url");
-        theActorInTheSpotlight().can(BrowseTheWeb.with(MyChromeDriver.chromeBrowserWeb().onTheUrl(ambienteEjecucion)));
+        actor.can(BrowseTheWeb.with(MyChromeDriver.chromeBrowserWeb().onTheUrl(ambienteEjecucion)));
         logger.info("Url ambiente QA: " + ambienteEjecucion);
     }
 }

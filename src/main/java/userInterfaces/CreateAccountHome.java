@@ -5,6 +5,12 @@ import org.openqa.selenium.By;
 
 public class CreateAccountHome {
 
+    public static final Target REGISTER_TOGGLE = Target.the("mostrar formulario de registro")
+            .located(By.id("show_register"));
+
+    public static final Target REGISTER_USER = Target.the("usuario del registro")
+            .located(By.id("reg_username"));
+
     public static final Target INPUT_ID = Target.the("Ingreso la cedula del usuario")
             .located(By.id("reg_username"));
 
@@ -27,9 +33,15 @@ public class CreateAccountHome {
             .located(By.id("privacy_policy_reg"));
 
     public static final Target BTTN_REGISTER  = Target.the("boton registrar")
-            .located(By.xpath("//button[contains(text(), 'Registrarme')]"));
+            .located(By.name("register"));
 
-    public static final Target WELCOMEMESSAGE = Target.the("welcome message")
-            .locatedBy("//h3[contains(.,'Hola')]");
+    public static final Target ACCOUNT_CONTENT = Target.the("contenido de la cuenta")
+            .locatedBy(".woocommerce-MyAccount-content");
+
+    public static final Target REGISTRATION_ERRORS = Target.the("errores de registro")
+            .locatedBy(".woocommerce-error, .woocommerce-notices-wrapper .woocommerce-error");
+
+    public static final Target ACCOUNT_LOGOUT = Target.the("enlace de cierre de sesión")
+            .locatedBy("a[href*='customer-logout']");
 
 }
